@@ -1,8 +1,14 @@
-FROM python:3.11-slim
+FROM --platform=linux/amd64 python:3.11-slim
 
 # Set platform for multi-arch builds (Docker Buildx will set this)
 ARG TARGETPLATFORM
+ARG BUILDPLATFORM
 ARG NODE_MAJOR=20
+
+# Add metadata
+LABEL maintainer="web-ui"
+LABEL version="1.0"
+LABEL description="Browser Use Web UI with AWS Bedrock and SageMaker integration"
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -92,6 +98,11 @@ COPY . .
 # Set up supervisor configuration
 RUN mkdir -p /var/log/supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Set environment variables for container operation
+ENV HEADLESS=true
+ENV USE_OWN_BROWSER=false
+ENV KEEP_BROWSER_OPEN=true
 
 EXPOSE 7788 6080 5901 9222
 

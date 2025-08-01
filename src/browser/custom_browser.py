@@ -9,18 +9,45 @@ from playwright.async_api import (
     Playwright,
     async_playwright,
 )
-from browser_use.browser.browser import Browser, IN_DOCKER
+from browser_use.browser.browser import Browser
 from browser_use.browser.context import BrowserContext, BrowserContextConfig
 from playwright.async_api import BrowserContext as PlaywrightBrowserContext
 import logging
 
-from browser_use.browser.chrome import (
-    CHROME_ARGS,
-    CHROME_DETERMINISTIC_RENDERING_ARGS,
-    CHROME_DISABLE_SECURITY_ARGS,
-    CHROME_DOCKER_ARGS,
-    CHROME_HEADLESS_ARGS,
-)
+# Chrome constants moved to Browser class in newer versions
+CHROME_ARGS = [
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-features=TranslateUI',
+    '--disable-ipc-flooding-protection',
+]
+
+CHROME_DOCKER_ARGS = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+]
+
+CHROME_HEADLESS_ARGS = [
+    '--headless=new',
+]
+
+CHROME_DISABLE_SECURITY_ARGS = [
+    '--disable-web-security',
+    '--disable-site-isolation-trials',
+    '--disable-features=IsolateOrigins,site-per-process',
+]
+
+CHROME_DETERMINISTIC_RENDERING_ARGS = [
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-features=TranslateUI',
+    '--disable-ipc-flooding-protection',
+]
 from browser_use.browser.context import BrowserContext, BrowserContextConfig
 from browser_use.browser.utils.screen_resolution import get_screen_resolution, get_window_adjustments
 from browser_use.utils import time_execution_async
@@ -63,10 +90,14 @@ class CustomBrowser(Browser):
             screen_size = get_screen_resolution()
             offset_x, offset_y = get_window_adjustments()
 
+        # Check if running in Docker by looking for common Docker indicators
+        import os
+        is_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
+        
         chrome_args = {
             f'--remote-debugging-port={self.config.chrome_remote_debugging_port}',
             *CHROME_ARGS,
-            *(CHROME_DOCKER_ARGS if IN_DOCKER else []),
+            *(CHROME_DOCKER_ARGS if is_docker else []),
             *(CHROME_HEADLESS_ARGS if self.config.headless else []),
             *(CHROME_DISABLE_SECURITY_ARGS if self.config.disable_security else []),
             *(CHROME_DETERMINISTIC_RENDERING_ARGS if self.config.deterministic_rendering else []),

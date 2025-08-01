@@ -49,7 +49,7 @@ from langchain_ibm import ChatWatsonx
 from langchain_aws import ChatBedrock
 from pydantic import SecretStr
 
-from src.utils import config
+from . import config
 
 
 class DeepSeekR1ChatOpenAI(ChatOpenAI):
@@ -349,6 +349,28 @@ def get_llm_model(provider: str, **kwargs):
             base_url=base_url,
             model_name=kwargs.get("model_name", "Qwen/QwQ-32B"),
             temperature=kwargs.get("temperature", 0.0),
+        )
+    elif provider == "bedrock":
+        import boto3
+        
+        region = kwargs.get("region", "") or os.getenv("AWS_BEDROCK_REGION", "us-west-2")
+        
+        session = boto3.Session(region_name=region)
+        bedrock_runtime = session.client(
+            service_name="bedrock-runtime",
+            region_name=region,
+        )
+        
+        model_id = kwargs.get("model_name", "anthropic.claude-3-5-sonnet-20241022-v2:0")
+        
+        return ChatBedrock(
+            client=bedrock_runtime,
+            model=model_id,
+            model_kwargs={
+                "temperature": kwargs.get("temperature", 0.0),
+                "max_tokens": kwargs.get("num_ctx", 4096),
+            },
+            streaming=False,  # Disable streaming to avoid parsing issues
         )
     else:
         raise ValueError(f"Unsupported provider: {provider}")

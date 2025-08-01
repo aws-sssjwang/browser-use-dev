@@ -7,6 +7,7 @@ import os
 # from lmnr.sdk.decorators import observe
 from browser_use.agent.gif import create_history_gif
 from browser_use.agent.service import Agent, AgentHookFunc
+from src.agent.custom_agent import CustomAgent
 from browser_use.agent.views import (
     ActionResult,
     AgentHistory,
@@ -27,7 +28,10 @@ SKIP_LLM_API_KEY_VERIFICATION = (
 )
 
 
-class BrowserUseAgent(Agent):
+class BrowserUseAgent(CustomAgent):
+    def __init__(self, *args, placeholders=None, **kwargs):
+        super().__init__(*args, placeholders=placeholders, **kwargs)
+    
     def _set_tool_calling_method(self) -> ToolCallingMethod | None:
         tool_calling_method = self.settings.tool_calling_method
         if tool_calling_method == 'auto':

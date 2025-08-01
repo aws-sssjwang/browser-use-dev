@@ -64,7 +64,7 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
             )
             headless = gr.Checkbox(
                 label="Headless Mode",
-                value=False,
+                value=bool(strtobool(os.getenv("HEADLESS", "true"))),
                 info="Run browser without GUI",
                 interactive=True
             )

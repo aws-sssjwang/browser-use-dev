@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 
 from browser_use.browser.browser import Browser, IN_DOCKER
 from browser_use.browser.context import BrowserContext, BrowserContextConfig

@@ -38,6 +38,12 @@ services:
       - IBM_ENDPOINT=${IBM_ENDPOINT:-https://us-south.ml.cloud.ibm.com}
       - IBM_API_KEY=${IBM_API_KEY:-}
       - IBM_PROJECT_ID=${IBM_PROJECT_ID:-}
+      - GROK_ENDPOINT=${GROK_ENDPOINT:-https://api.x.ai/v1}
+      - GROK_API_KEY=${GROK_API_KEY:-}
+
+      # AWS Bedrock Settings
+      - AWS_BEDROCK_REGION=${AWS_BEDROCK_REGION:-us-west-2}
+      - BEDROCK_API_KEY=${BEDROCK_API_KEY:-}
 
       # Application Settings
       - ANONYMIZED_TELEMETRY=${ANONYMIZED_TELEMETRY:-false}
@@ -66,6 +72,7 @@ services:
 
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ~/.aws/credentials:/root/.aws/credentials:ro # AWS credentials for Bedrock
       # - ./my_chrome_data:/app/data/chrome_data # Optional: persist browser data
     restart: unless-stopped
     shm_size: '2gb'

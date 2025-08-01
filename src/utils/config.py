@@ -9,6 +9,7 @@ PROVIDER_DISPLAY_NAMES = {
     "unbound": "Unbound AI",
     "ibm": "IBM",
     "grok": "Grok",
+    "bedrock": "AWS Bedrock",
 }
 
 # Predefined model names for common providers
@@ -97,4 +98,5 @@ model_names = {
         "Qwen/Qwen3-32B",
         "Qwen/Qwen3-235B-A22B",
     ],
+    "bedrock": ["anthropic.claude-3-5-sonnet-20241022-v2:0", "anthropic.claude-3-5-sonnet-20240620-v1:0", "anthropic.claude-3-opus-20240229-v1:0"],
 }

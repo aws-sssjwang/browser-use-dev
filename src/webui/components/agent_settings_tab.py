@@ -53,7 +53,36 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
     with gr.Group():
         with gr.Column():
             override_system_prompt = gr.Textbox(label="Override system prompt", lines=4, interactive=True)
-            extend_system_prompt = gr.Textbox(label="Extend system prompt", lines=4, interactive=True)
+            extend_system_prompt = gr.Textbox(
+                label="Extend system prompt", 
+                lines=6, 
+                interactive=True,
+                value="""When generating browser actions, always use proper JSON format. Never return empty actions or {}.
+
+For navigation tasks, use this exact format:
+{
+    "action": [
+        {
+            "go_to_url": {
+                "url": "target_url_here"
+            }
+        }
+    ]
+}
+
+For clicking elements, use:
+{
+    "action": [
+        {
+            "click": {
+                "coordinate": [x, y]
+            }
+        }
+    ]
+}
+
+Always ensure actions are properly formatted and never empty."""
+            )
 
     with gr.Group():
         mcp_json_file = gr.File(label="MCP server json", interactive=True, file_types=[".json"])
@@ -64,14 +93,14 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
             llm_provider = gr.Dropdown(
                 choices=[provider for provider, model in config.model_names.items()],
                 label="LLM Provider",
-                value=os.getenv("DEFAULT_LLM", "openai"),
+                value=os.getenv("DEFAULT_LLM", "bedrock"),
                 info="Select LLM provider for LLM",
                 interactive=True
             )
             llm_model_name = gr.Dropdown(
                 label="LLM Model Name",
-                choices=config.model_names[os.getenv("DEFAULT_LLM", "openai")],
-                value=config.model_names[os.getenv("DEFAULT_LLM", "openai")][0],
+                choices=config.model_names[os.getenv("DEFAULT_LLM", "bedrock")],
+                value=config.model_names[os.getenv("DEFAULT_LLM", "bedrock")][0],
                 interactive=True,
                 allow_custom_value=True,
                 info="Select a model in the dropdown options or directly type a custom model name"

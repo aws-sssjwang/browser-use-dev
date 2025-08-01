@@ -4,9 +4,49 @@ import time
 from pathlib import Path
 from typing import Dict, Optional
 import requests
-import json
+import boto3
+
+from langchain_anthropic import ChatAnthropic
+from langchain_mistralai import ChatMistralAI
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from langchain_aws import ChatBedrock
 import gradio as gr
-import uuid
+
+
+model_names = {
+    "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
+    "anthropic": ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"],
+    "ollama": ["qwen2.5:7b", "llama3.2:3b", "deepseek-r1:14b", "deepseek-r1:32b"],
+    "deepseek": ["deepseek-chat", "deepseek-reasoner"],
+    "google": ["Google"],
+    "alibaba": ["Alibaba"],
+    "moonshot": ["MoonShot"],
+    "bedrock": ["anthropic.claude-3-5-sonnet-20241022-v2:0"]
+}
+
+def get_llm_model(provider: str, **kwargs):
+    """
+    Get LLM model based on provider
+    """
+    if provider == "bedrock":
+        region = kwargs.get("region", "") or os.getenv("AWS_BEDROCK_REGION", "us-west-2")
+        
+        session = boto3.Session(region_name=region)
+        bedrock_runtime = session.client(
+            service_name="bedrock-runtime",
+            region_name=region,
+        )
+        
+        model_id = kwargs.get("model_name", "anthropic.claude-3-5-sonnet-20241022-v2:0")
+        
+        return ChatBedrock(
+            client=bedrock_runtime,
+            model=model_id,
+        )
+    else:
+        raise ValueError(f"Unsupported provider: {provider}")
 
 
 def encode_image(img_path):

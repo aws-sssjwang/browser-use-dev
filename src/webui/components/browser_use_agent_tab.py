@@ -19,6 +19,7 @@ from gradio.components import Component
 from langchain_core.language_models.chat_models import BaseChatModel
 
 from src.agent.browser_use.browser_use_agent import BrowserUseAgent
+from src.agent.custom_agent import CustomAgent
 from src.browser.custom_browser import CustomBrowser
 from src.controller.custom_controller import CustomController
 from src.utils import llm_provider
@@ -26,6 +27,104 @@ from src.webui.webui_manager import WebuiManager
 
 logger = logging.getLogger(__name__)
 
+
+# --- URL Segmentation Functions ---
+
+def segment_presigned_url(url: str, first_segment_size: int = 200, other_segment_size: int = 400) -> list:
+    """
+    Segment a long presigned URL into manageable chunks.
+    
+    Args:
+        url: The full presigned URL to segment
+        first_segment_size: Size of the first segment (default 200 tokens)
+        other_segment_size: Size of other segments (default 400 tokens)
+    
+    Returns:
+        List of URL segments
+    """
+    segments = []
+    
+    # First segment (200 tokens/characters)
+    segments.append(url[:first_segment_size])
+    remaining_url = url[first_segment_size:]
+    
+    # Remaining segments (400 tokens/characters each)
+    while remaining_url:
+        segment_size = min(other_segment_size, len(remaining_url))
+        segments.append(remaining_url[:segment_size])
+        remaining_url = remaining_url[segment_size:]
+    
+    return segments
+
+def generate_task_instructions(num_segments: int) -> str:
+    """
+    Generate dynamic task instructions for URL reconstruction.
+    
+    Args:
+        num_segments: Number of URL segments
+    
+    Returns:
+        String with step-by-step instructions
+    """
+    if num_segments <= 1:
+        return "1. open PLACEHOLDER_URL_1"
+    
+    instructions = ["1. open PLACEHOLDER_URL_1"]
+    
+    for i in range(2, num_segments + 1):
+        instructions.append(f"{i}. append PLACEHOLDER_URL_{i} to the url")
+    
+    return "\n".join(instructions)
+
+def create_segmented_prerequisite_code(domain_id: str, user_profile: str, space_name: str) -> str:
+    """
+    Create prerequisite code with URL segmentation logic.
+    
+    Args:
+        domain_id: SageMaker domain ID
+        user_profile: SageMaker user profile name
+        space_name: SageMaker space name
+    
+    Returns:
+        Complete prerequisite code as string
+    """
+    return f'''import boto3
+
+session = boto3.Session(region_name="us-east-1")
+sagemaker_client = session.client("sagemaker")
+
+response = sagemaker_client.create_presigned_domain_url(
+    DomainId="{domain_id}",
+    UserProfileName="{user_profile}",
+    SpaceName="{space_name}"
+)
+
+# Segment the URL into manageable chunks
+def segment_url(url, first_size=200, other_size=400):
+    segments = []
+    segments.append(url[:first_size])
+    remaining = url[first_size:]
+    
+    while remaining:
+        segment_size = min(other_size, len(remaining))
+        segments.append(remaining[:segment_size])
+        remaining = remaining[segment_size:]
+    
+    return segments
+
+url_segments = segment_url(response["AuthorizedUrl"])
+
+PLACEHOLDERS = {{}}
+for i, segment in enumerate(url_segments, 1):
+    PLACEHOLDERS[f"PLACEHOLDER_URL_{{i}}"] = segment
+
+# Generate task instructions
+num_segments = len(url_segments)
+task_instructions = "1. open PLACEHOLDER_URL_1\\n"
+for i in range(2, num_segments + 1):
+    task_instructions += f"{{i}}. append PLACEHOLDER_URL_{{i}} to the url\\n"
+
+PLACEHOLDERS["TASK_INSTRUCTIONS"] = task_instructions'''
 
 # --- Helper Functions --- (Defined at module level)
 
@@ -299,12 +398,32 @@ async def run_agent_task(
         "browser_use_agent.browser_view"
     )
 
-    # --- 1. Get Task and Initial UI Update ---
+    # --- 1. Get Task and Prerequisite ---
     task = components.get(user_input_comp, "").strip()
     if not task:
         gr.Warning("Please enter a task.")
         yield {run_button_comp: gr.update(interactive=True)}
         return
+
+    # Get prerequisite code
+    prerequisite_comp = webui_manager.get_component_by_id("browser_use_agent.prerequisite")
+    prerequisite = components.get(prerequisite_comp, "").strip()
+    
+    # Execute the prerequisite variable as Python code
+    placeholders = {}
+    if prerequisite:
+        try:
+            global_vars = {}
+            exec(prerequisite, globals(), global_vars)
+            # Get PLACEHOLDERS key value as dict from global_vars.items()
+            placeholders = global_vars.get("PLACEHOLDERS", {})
+            logger.info(f"Executed prerequisite, placeholders: {placeholders}")
+        except Exception as e:
+            error_msg = f"Error executing prerequisite: {str(e)}"
+            logger.error(error_msg)
+            gr.Error(error_msg)
+            yield {run_button_comp: gr.update(interactive=True)}
+            return
 
     # Set running state indirectly via _current_task
     webui_manager.bu_chat_history.append({"role": "user", "content": task})
@@ -436,15 +555,40 @@ async def run_agent_task(
     should_close_browser_on_finish = not keep_browser_open
 
     try:
-        # Close existing resources if not keeping open
-        if not keep_browser_open:
+        # Enhanced browser state validation and cleanup
+        logger.info("Validating browser state before task execution...")
+        
+        # Always ensure we start with a clean browser state for new tasks
+        # This prevents issues where previous task state persists
+        if webui_manager.bu_browser_context:
+            logger.info("Detected existing browser context - validating state...")
+            try:
+                # Test if context is still valid by taking a screenshot
+                await webui_manager.bu_browser_context.take_screenshot()
+                logger.info("Browser context is valid and responsive.")
+            except Exception as e:
+                logger.warning(f"Browser context appears invalid: {e}. Closing and recreating...")
+                try:
+                    await webui_manager.bu_browser_context.close()
+                except Exception:
+                    pass
+                webui_manager.bu_browser_context = None
+        
+        # Close existing resources if not keeping open OR if we need a fresh start
+        if not keep_browser_open or webui_manager.bu_browser_context is None:
             if webui_manager.bu_browser_context:
-                logger.info("Closing previous browser context.")
-                await webui_manager.bu_browser_context.close()
+                logger.info("Closing previous browser context for fresh start.")
+                try:
+                    await webui_manager.bu_browser_context.close()
+                except Exception as e:
+                    logger.warning(f"Error closing browser context: {e}")
                 webui_manager.bu_browser_context = None
             if webui_manager.bu_browser:
-                logger.info("Closing previous browser.")
-                await webui_manager.bu_browser.close()
+                logger.info("Closing previous browser for fresh start.")
+                try:
+                    await webui_manager.bu_browser.close()
+                except Exception as e:
+                    logger.warning(f"Error closing browser: {e}")
                 webui_manager.bu_browser = None
 
         # Create Browser if needed
@@ -543,6 +687,7 @@ async def run_agent_task(
                 planner_llm=planner_llm,
                 use_vision_for_planner=planner_use_vision if planner_llm else False,
                 source="webui",
+                placeholders=placeholders,
             )
             webui_manager.bu_agent.state.agent_id = webui_manager.bu_agent_task_id
             webui_manager.bu_agent.settings.generate_gif = gif_path
@@ -659,8 +804,8 @@ async def run_agent_task(
                 )
                 last_chat_len = len(webui_manager.bu_chat_history)
 
-            # Update Browser View
-            if headless and webui_manager.bu_browser_context:
+            # Update Browser View (always show in headless mode for cloud deployment)
+            if webui_manager.bu_browser_context:
                 try:
                     screenshot_b64 = (
                         await webui_manager.bu_browser_context.take_screenshot()
@@ -678,11 +823,14 @@ async def run_agent_task(
                 except Exception as e:
                     logger.debug(f"Failed to capture screenshot: {e}")
                     update_dict[browser_view_comp] = gr.update(
-                        value="<div style='...'>Error loading view...</div>",
+                        value="<div style='width:70vw; height:50vh; display:flex; justify-content:center; align-items:center; border:1px solid #ccc; background-color:#f0f0f0;'>Error loading browser view</div>",
                         visible=True,
                     )
             else:
-                update_dict[browser_view_comp] = gr.update(visible=False)
+                update_dict[browser_view_comp] = gr.update(
+                    value="<div style='width:70vw; height:50vh; display:flex; justify-content:center; align-items:center; border:1px solid #ccc; background-color:#f0f0f0;'>Browser not initialized</div>",
+                    visible=True
+                )
 
             # Yield accumulated updates
             if update_dict:
@@ -907,37 +1055,69 @@ async def handle_pause_resume(webui_manager: WebuiManager):
 
 
 async def handle_clear(webui_manager: WebuiManager):
-    """Handles clicks on the 'Clear' button."""
-    logger.info("Clear button clicked.")
+    """Handles clicks on the 'Clear' button with complete state reset."""
+    logger.info("Clear button clicked - performing complete state reset.")
 
-    # Stop any running task first
+    # Step 1: Stop any running task first
     task = webui_manager.bu_current_task
     if task and not task.done():
-        logger.info("Clearing requires stopping the current task.")
-        webui_manager.bu_agent.stop()
-        task.cancel()
+        logger.info("Stopping current task before clearing...")
         try:
-            await asyncio.wait_for(task, timeout=2.0)  # Wait briefly
+            if webui_manager.bu_agent:
+                webui_manager.bu_agent.state.stopped = True
+                webui_manager.bu_agent.state.paused = False
+            task.cancel()
+            await asyncio.wait_for(task, timeout=3.0)  # Give more time for graceful shutdown
         except (asyncio.CancelledError, asyncio.TimeoutError):
-            pass
+            logger.info("Task cancelled or timed out during clear.")
         except Exception as e:
             logger.warning(f"Error stopping task on clear: {e}")
     webui_manager.bu_current_task = None
 
+    # Step 2: Force close browser context (ignore keep_browser_open setting)
+    if webui_manager.bu_browser_context:
+        logger.info("Force closing browser context...")
+        try:
+            await webui_manager.bu_browser_context.close()
+            logger.info("Browser context closed successfully.")
+        except Exception as e:
+            logger.warning(f"Error closing browser context: {e}")
+        finally:
+            webui_manager.bu_browser_context = None
+
+    # Step 3: Force close browser instance (ignore keep_browser_open setting)
+    if webui_manager.bu_browser:
+        logger.info("Force closing browser instance...")
+        try:
+            await webui_manager.bu_browser.close()
+            logger.info("Browser instance closed successfully.")
+        except Exception as e:
+            logger.warning(f"Error closing browser instance: {e}")
+        finally:
+            webui_manager.bu_browser = None
+
+    # Step 4: Close MCP controller
     if webui_manager.bu_controller:
-        await webui_manager.bu_controller.close_mcp_client()
-        webui_manager.bu_controller = None
+        logger.info("Closing MCP controller...")
+        try:
+            await webui_manager.bu_controller.close_mcp_client()
+        except Exception as e:
+            logger.warning(f"Error closing MCP controller: {e}")
+        finally:
+            webui_manager.bu_controller = None
+
+    # Step 5: Reset agent
     webui_manager.bu_agent = None
 
-    # Reset state stored in manager
+    # Step 6: Reset all state variables
     webui_manager.bu_chat_history = []
     webui_manager.bu_response_event = None
     webui_manager.bu_user_help_response = None
     webui_manager.bu_agent_task_id = None
 
-    logger.info("Agent state and browser resources cleared.")
+    logger.info("Complete state reset completed successfully.")
 
-    # Reset UI components
+    # Step 7: Reset UI components with clear status
     return {
         webui_manager.get_component_by_id("browser_use_agent.chatbot"): gr.update(
             value=[]
@@ -952,7 +1132,7 @@ async def handle_clear(webui_manager: WebuiManager):
             value=None
         ),
         webui_manager.get_component_by_id("browser_use_agent.browser_view"): gr.update(
-            value="<div style='...'>Browser Cleared</div>"
+            value="<div style='width:70vw; height:50vh; display:flex; justify-content:center; align-items:center; border:1px solid #ccc; background-color:#f0f0f0; color:#666;'><p>✅ Browser Cleared - Ready for new task</p></div>"
         ),
         webui_manager.get_component_by_id("browser_use_agent.run_button"): gr.update(
             value="▶️ Submit Task", interactive=True
@@ -981,6 +1161,18 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
     # --- Define UI Components ---
     tab_components = {}
     with gr.Column():
+        prerequisite = gr.Textbox(
+            label="Prerequisite",
+            lines=15,
+            placeholder="Add any prerequisites...",
+            value=create_segmented_prerequisite_code(
+                "d-9cpchwz1nnno",
+                "adam-test-user-1752279282450", 
+                "adam-space-1752279293076"
+            ),
+            info="Optional prerequisites for the task",
+        )
+        
         chatbot = gr.Chatbot(
             lambda: webui_manager.bu_chat_history,  # Load history dynamically
             elem_id="browser_use_chatbot",
@@ -992,7 +1184,68 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
         user_input = gr.Textbox(
             label="Your Task or Response",
             placeholder="Enter your task here or provide assistance when asked.",
-            lines=3,
+            value="""1. open PLACEHOLDER_URL_1
+2. append PLACEHOLDER_URL_2 to the url
+3. append PLACEHOLDER_URL_3 to the url
+4. append PLACEHOLDER_URL_4 to the url
+5. append PLACEHOLDER_URL_5 to the url
+6. append PLACEHOLDER_URL_6 to the url
+7. append PLACEHOLDER_URL_7 to the url
+8. append PLACEHOLDER_URL_8 to the url
+9. append PLACEHOLDER_URL_9 to the url
+10. append PLACEHOLDER_URL_10 to the url
+11. append PLACEHOLDER_URL_11 to the url
+12. append PLACEHOLDER_URL_12 to the url
+
+After URL reconstruction is complete:
+
+Click on text "File"
+Click on text "New" not "New Launcher"
+Click on text "Notebook" not "Console" or "Terminal"
+
+Step 2: Setup Notebook Environment with Python 3 Kernel
+Verify text "Select Kernel" is visible
+Select "Python 3 (ipykernel)" from dropdown menu
+Click on button "Select"
+
+Step 3: Rename Notebook (Generate unique name for test)
+Click on text "File"
+Click on text "Rename Notebook…"
+Clear all text in the input field
+Type "sagemaker_studio_python3_canary_test.ipynb" in the input field
+Click on button "Rename"
+
+Step 4: EMR Serverless Connection Test with python3
+Click on text "Cluster"
+Verify text "EMR Serverless Applications" is visible
+
+Try to find and click EMR application - multiple approaches
+Approach 1: Try clicking by application name
+Click on text "emrs-app"
+Wait for 5 seconds
+
+Step 5: Connect to EMR Serverless with python3
+Click on button "Connect"
+Wait for 15 seconds
+Verify text "Select EMR runtime execution role for cluster" is visible
+
+Click on button "Connect"
+
+Step 6: Verify python3 Connection Commands and Session Info
+Verify text "%load_ext sagemaker_studio_analytics_extension" is visible
+Verify page contains "%sm_analytics emr-serverless connect —application-id"
+
+Step 7: Verify Session Info Table for python3
+Verify text "YARN Application ID" is visible
+Verify text "State" is visible
+Verify text "Driver log" is visible
+
+Step 8: Verify python3 Connection Status
+Look for the checkmark indicating successful connection
+Verify text "✔", which should be correct mark is visible
+
+Step 9: Cleanup - Delete python3 Test Notebook""",
+            lines=15,
             interactive=True,
             elem_id="user_input",
         )
@@ -1027,6 +1280,7 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
     # --- Store Components in Manager ---
     tab_components.update(
         dict(
+            prerequisite=prerequisite,
             chatbot=chatbot,
             user_input=user_input,
             clear_button=clear_button,
