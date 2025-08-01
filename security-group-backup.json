@@ -1,0 +1,55 @@
+{
+    "SecurityGroups": [
+        {
+            "GroupId": "sg-07631d2e4e3537a05",
+            "IpPermissionsEgress": [
+                {
+                    "IpProtocol": "-1",
+                    "UserIdGroupPairs": [],
+                    "IpRanges": [
+                        {
+                            "CidrIp": "0.0.0.0/0"
+                        }
+                    ],
+                    "Ipv6Ranges": [],
+                    "PrefixListIds": []
+                }
+            ],
+            "Tags": [
+                {
+                    "Key": "elbv2.k8s.aws/cluster",
+                    "Value": "browser-use-deployment-cluster"
+                },
+                {
+                    "Key": "ingress.k8s.aws/resource",
+                    "Value": "ManagedLBSecurityGroup"
+                },
+                {
+                    "Key": "ingress.k8s.aws/stack",
+                    "Value": "default/browser-use-ingress"
+                }
+            ],
+            "VpcId": "vpc-073972edcd27af329",
+            "SecurityGroupArn": "arn:aws:ec2:us-east-1:137386359997:security-group/sg-07631d2e4e3537a05",
+            "OwnerId": "137386359997",
+            "GroupName": "k8s-default-browseru-296d349b06",
+            "Description": "[k8s] Managed SecurityGroup for LoadBalancer",
+            "IpPermissions": [
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 80,
+                    "ToPort": 80,
+                    "UserIdGroupPairs": [],
+                    "IpRanges": [
+                        {
+                            "Description": "",
+                            "CidrIp": "0.0.0.0/0"
+                        }
+                    ],
+                    "Ipv6Ranges": [],
+                    "PrefixListIds": []
+                }
+            ]
+        }
+    ]
+}

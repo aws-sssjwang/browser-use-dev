@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFront Distribution for Browser-Use Application'
+
+Parameters:
+  ALBDNSName:
+    Type: String
+    Default: k8s-default-browseru-2fa3df251a-981368402.us-east-1.elb.amazonaws.com
+    Description: DNS name of the Application Load Balancer
+
+Resources:
+  BrowserUseCloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: 'CloudFront distribution for Browser-Use application'
+        Enabled: true
+        HttpVersion: http2
+        
+        Origins:
+        - Id: ALBOrigin
+          DomainName: !Ref ALBDNSName
+          CustomOriginConfig:
+            HTTPPort: 80
+            HTTPSPort: 443
+            OriginProtocolPolicy: http-only
+            OriginSSLProtocols:
+            - TLSv1.2
+            OriginReadTimeout: 60
+            OriginKeepaliveTimeout: 5
+        
+        DefaultCacheBehavior:
+          TargetOriginId: ALBOrigin
+          ViewerProtocolPolicy: allow-all
+          AllowedMethods:
+          - DELETE
+          - GET
+          - HEAD
+          - OPTIONS
+          - PATCH
+          - POST
+          - PUT
+          CachedMethods:
+          - GET
+          - HEAD
+          Compress: true
+          ForwardedValues:
+            QueryString: true
+            Headers:
+            - '*'
+            Cookies:
+              Forward: all
+          # Disable caching for interactive application
+          DefaultTTL: 0
+          MaxTTL: 0
+          MinTTL: 0
+        
+        # Additional cache behaviors for WebSocket and real-time features
+        CacheBehaviors:
+        - PathPattern: '/ws/*'
+          TargetOriginId: ALBOrigin
+          ViewerProtocolPolicy: allow-all
+          AllowedMethods:
+          - DELETE
+          - GET
+          - HEAD
+          - OPTIONS
+          - PATCH
+          - POST
+          - PUT
+          ForwardedValues:
+            QueryString: true
+            Headers:
+            - '*'
+            Cookies:
+              Forward: all
+          DefaultTTL: 0
+          MaxTTL: 0
+          MinTTL: 0
+        - PathPattern: '/api/*'
+          TargetOriginId: ALBOrigin
+          ViewerProtocolPolicy: allow-all
+          AllowedMethods:
+          - DELETE
+          - GET
+          - HEAD
+          - OPTIONS
+          - PATCH
+          - POST
+          - PUT
+          ForwardedValues:
+            QueryString: true
+            Headers:
+            - '*'
+            Cookies:
+              Forward: all
+          DefaultTTL: 0
+          MaxTTL: 0
+          MinTTL: 0
+        - PathPattern: '/vnc.html*'
+          TargetOriginId: ALBOrigin
+          ViewerProtocolPolicy: allow-all
+          AllowedMethods:
+          - DELETE
+          - GET
+          - HEAD
+          - OPTIONS
+          - PATCH
+          - POST
+          - PUT
+          ForwardedValues:
+            QueryString: true
+            Headers:
+            - '*'
+            Cookies:
+              Forward: all
+          DefaultTTL: 0
+          MaxTTL: 0
+          MinTTL: 0
+        - PathPattern: '/websockify*'
+          TargetOriginId: ALBOrigin
+          ViewerProtocolPolicy: allow-all
+          AllowedMethods:
+          - DELETE
+          - GET
+          - HEAD
+          - OPTIONS
+          - PATCH
+          - POST
+          - PUT
+          ForwardedValues:
+            QueryString: true
+            Headers:
+            - '*'
+            Cookies:
+              Forward: all
+          DefaultTTL: 0
+          MaxTTL: 0
+          MinTTL: 0
+        
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+Outputs:
+  CloudFrontDomainName:
+    Description: 'CloudFront Distribution Domain Name'
+    Value: !GetAtt BrowserUseCloudFrontDistribution.DomainName
+    Export:
+      Name: !Sub '${AWS::StackName}-CloudFrontDomainName'
+  
+  CloudFrontDistributionId:
+    Description: 'CloudFront Distribution ID'
+    Value: !Ref BrowserUseCloudFrontDistribution
+    Export:
+      Name: !Sub '${AWS::StackName}-CloudFrontDistributionId'

@@ -1,0 +1,18 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "bedrock:InvokeModel",
+                "bedrock:InvokeModelWithResponseStream"
+            ],
+            "Resource": [
+                "arn:aws:bedrock:*::foundation-model/anthropic.claude-*",
+                "arn:aws:bedrock:*::foundation-model/amazon.titan-*",
+                "arn:aws:bedrock:*::foundation-model/meta.llama2-*",
+                "arn:aws:bedrock:*::foundation-model/cohere.command-*"
+            ]
+        }
+    ]
+}

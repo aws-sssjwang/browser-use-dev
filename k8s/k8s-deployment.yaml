@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: browser-use-deployment
+  labels:
+    app: browser-use
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: browser-use
+  template:
+    metadata:
+      labels:
+        app: browser-use
+    spec:
+      containers:
+      - name: browser-use
+        image: 137386359997.dkr.ecr.us-east-1.amazonaws.com/web-ui:long-url-fix
+        ports:
+        - containerPort: 7788
+          name: webui
+        - containerPort: 6080
+          name: vnc-web
+        - containerPort: 5901
+          name: vnc-direct
+        - containerPort: 9222
+          name: browser-debug
+        env:
+        - name: DISPLAY
+          value: ":99"
+        - name: RESOLUTION
+          value: "1920x1080x24"
+        - name: VNC_PASSWORD
+          value: "youvncpassword"
+        - name: BROWSER_DEBUGGING_PORT
+          value: "9222"
+        - name: BROWSER_DEBUGGING_HOST
+          value: "localhost"
+        - name: USE_OWN_BROWSER
+          value: "false"
+        - name: KEEP_BROWSER_OPEN
+          value: "true"
+        - name: ANONYMIZED_TELEMETRY
+          value: "false"
+        - name: BROWSER_USE_LOGGING_LEVEL
+          value: "info"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1500m"
+        securityContext:
+          capabilities:
+            add:
+              - SYS_ADMIN
+        volumeMounts:
+        - name: shm-volume
+          mountPath: /dev/shm
+        - name: tmp-volume
+          mountPath: /tmp
+      volumes:
+      - name: shm-volume
+        emptyDir:
+          medium: Memory
+          sizeLimit: 2Gi
+      - name: tmp-volume
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: browser-use-service
+  labels:
+    app: browser-use
+spec:
+  selector:
+    app: browser-use
+  ports:
+  - name: webui
+    port: 7788
+    targetPort: 7788
+    protocol: TCP
+  - name: vnc-web
+    port: 6080
+    targetPort: 6080
+    protocol: TCP
+  - name: vnc-direct
+    port: 5901
+    targetPort: 5901
+    protocol: TCP
+  - name: browser-debug
+    port: 9222
+    targetPort: 9222
+    protocol: TCP
+  type: ClusterIP
