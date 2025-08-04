@@ -52,6 +52,54 @@ class CustomController(Controller):
         """Register all custom browser actions"""
 
         @self.registry.action(
+            "Navigate to SageMaker presigned URL. This action generates a fresh presigned URL using boto3 and "
+            "navigates directly to it. Use this for accessing SageMaker Studio domains that require presigned URLs."
+        )
+        async def navigate_to_sagemaker_presigned_url(
+            domain_id: str, 
+            user_profile_name: str, 
+            space_name: str, 
+            browser: BrowserContext,
+            region_name: str = "us-east-1"
+        ):
+            try:
+                import boto3
+                logger.info("Generating presigned URL for SageMaker domain with hardcoded parameters")
+                
+                # Create boto3 session and client
+                session = boto3.Session(region_name="us-east-1")
+                sagemaker_client = session.client("sagemaker")
+                
+                # Generate presigned URL with hardcoded parameters for testing
+                response = sagemaker_client.create_presigned_domain_url(
+                    DomainId="d-9cpchwz1nnno",
+                    UserProfileName="adam-test-user-1752279282450",
+                    SpaceName="adam-space-1752279293076"
+                )
+                
+                presigned_url = response["AuthorizedUrl"]
+                logger.info(f"Generated presigned URL (length: {len(presigned_url)} chars)")
+                
+                # Execute the go_to_url action through the registry
+                result = await self.registry.execute_action(
+                    "go_to_url",
+                    {"url": presigned_url},
+                    browser=browser
+                )
+                
+                # Wait a moment for the page to load
+                await asyncio.sleep(3)
+                
+                msg = f"Successfully navigated to SageMaker presigned URL for domain {domain_id}"
+                logger.info(msg)
+                return ActionResult(extracted_content=msg, include_in_memory=True)
+                
+            except Exception as e:
+                error_msg = f"Failed to navigate to SageMaker presigned URL: {str(e)}"
+                logger.error(error_msg)
+                return ActionResult(error=error_msg)
+
+        @self.registry.action(
             "When executing tasks, prioritize autonomous completion. However, if you encounter a definitive blocker "
             "that prevents you from proceeding independently – such as needing credentials you don't possess, "
             "requiring subjective human judgment, needing a physical action performed, encountering complex CAPTCHAs, "
