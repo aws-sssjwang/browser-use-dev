@@ -104,7 +104,7 @@ main() {
     
     # Get deployment status
     echo_info "Deployment status:"
-    kubectl get pods -n $NAMESPACE -l app=web-ui
+    kubectl get pods -n $NAMESPACE -l app=browser-use
     
     # Get service information
     echo_info "Service information:"

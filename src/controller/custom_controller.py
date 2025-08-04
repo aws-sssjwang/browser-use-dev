@@ -64,39 +64,101 @@ class CustomController(Controller):
         ):
             try:
                 import boto3
-                logger.info("Generating presigned URL for SageMaker domain with hardcoded parameters")
+                import requests
+                import time
                 
-                # Create boto3 session and client
-                session = boto3.Session(region_name="us-east-1")
-                sagemaker_client = session.client("sagemaker")
+                logger.info("🚀 SIMPLIFIED SageMaker Navigation - Debug Version")
+                logger.info(f"📋 Hardcoded parameters: DomainId=d-9cpchwz1nnno, UserProfile=adam-test-user-1752279282450, Space=adam-space-1752279293076")
                 
-                # Generate presigned URL with hardcoded parameters for testing
-                response = sagemaker_client.create_presigned_domain_url(
-                    DomainId="d-9cpchwz1nnno",
-                    UserProfileName="adam-test-user-1752279282450",
-                    SpaceName="adam-space-1752279293076"
-                )
+                # Step 1: Create AWS session with retry
+                session = None
+                sagemaker_client = None
+                for attempt in range(3):
+                    try:
+                        logger.info(f"🔄 AWS session attempt {attempt + 1}/3...")
+                        session = boto3.Session(region_name="us-east-1")
+                        sagemaker_client = session.client("sagemaker")
+                        logger.info("✅ AWS session and SageMaker client created successfully")
+                        break
+                    except Exception as aws_error:
+                        logger.warning(f"⚠️ AWS session attempt {attempt + 1} failed: {str(aws_error)}")
+                        if attempt == 2:
+                            error_msg = f"❌ Failed to create AWS session after 3 attempts: {str(aws_error)}"
+                            logger.error(error_msg)
+                            return ActionResult(error=error_msg)
+                        await asyncio.sleep(2)
                 
-                presigned_url = response["AuthorizedUrl"]
-                logger.info(f"Generated presigned URL (length: {len(presigned_url)} chars)")
+                # Step 2: Generate presigned URL with retry
+                presigned_url = None
+                if sagemaker_client:
+                    for attempt in range(3):
+                        try:
+                            logger.info(f"🔄 Presigned URL generation attempt {attempt + 1}/3...")
+                            response = sagemaker_client.create_presigned_domain_url(
+                                DomainId="d-9cpchwz1nnno",
+                                UserProfileName="adam-test-user-1752279282450",
+                                SpaceName="adam-space-1752279293076"
+                            )
+                            
+                            presigned_url = response["AuthorizedUrl"]
+                            logger.info(f"✅ Generated presigned URL successfully (length: {len(presigned_url)} chars)")
+                            logger.info(f"🔗 URL preview: {presigned_url[:100]}...")
+                            break
+                            
+                        except Exception as boto_error:
+                            logger.warning(f"⚠️ Presigned URL attempt {attempt + 1} failed: {str(boto_error)}")
+                            if attempt == 2:
+                                error_msg = f"❌ Failed to generate presigned URL after 3 attempts: {str(boto_error)}"
+                                logger.error(error_msg)
+                                return ActionResult(error=error_msg)
+                            await asyncio.sleep(2)
                 
-                # Execute the go_to_url action through the registry
-                result = await self.registry.execute_action(
-                    "go_to_url",
-                    {"url": presigned_url},
-                    browser=browser
-                )
+                if not presigned_url:
+                    error_msg = "❌ Failed to generate presigned URL - no URL obtained"
+                    logger.error(error_msg)
+                    return ActionResult(error=error_msg)
                 
-                # Wait a moment for the page to load
-                await asyncio.sleep(3)
+                # Step 3: Pre-validate URL accessibility
+                if presigned_url:
+                    logger.info("🔍 Pre-validating URL accessibility...")
+                    try:
+                        response = requests.head(presigned_url, timeout=30, allow_redirects=True)
+                        logger.info(f"✅ URL pre-validation successful: HTTP {response.status_code}")
+                    except Exception as pre_error:
+                        logger.warning(f"⚠️ URL pre-validation failed: {str(pre_error)}")
+                        # Continue anyway, as this might be expected
                 
-                msg = f"Successfully navigated to SageMaker presigned URL for domain {domain_id}"
-                logger.info(msg)
-                return ActionResult(extracted_content=msg, include_in_memory=True)
-                
+                # Step 4: Simple and fast navigation
+                try:
+                    logger.info("🌐 Executing navigation to SageMaker Studio...")
+                    
+                    # 直接使用浏览器的导航方法
+                    page = await browser.get_current_page()
+                    await page.goto(presigned_url, wait_until="domcontentloaded", timeout=60000)
+                    logger.info("✅ Navigation command executed successfully")
+                    
+                    # Short wait for initial page load
+                    logger.info("⏳ Waiting for SageMaker Studio to load (15 seconds)...")
+                    await asyncio.sleep(15)
+                    
+                    # Success! SageMaker Studio should now be accessible
+                    msg = f"🎉 SUCCESS: SageMaker Studio navigation completed successfully"
+                    logger.info(msg)
+                    logger.info("📍 SageMaker Studio should now be loaded and ready to use")
+                    logger.info("🔗 The JupyterLab environment should be available for your tasks")
+                    
+                    return ActionResult(extracted_content=msg, include_in_memory=True)
+                    
+                except Exception as nav_error:
+                    error_msg = f"❌ Navigation failed: {str(nav_error)}"
+                    logger.error(error_msg)
+                    logger.error(f"🔍 Error type: {type(nav_error).__name__}")
+                    return ActionResult(error=error_msg)
+                    
             except Exception as e:
-                error_msg = f"Failed to navigate to SageMaker presigned URL: {str(e)}"
+                error_msg = f"❌ CRITICAL ERROR in ultimate SageMaker navigation: {str(e)}"
                 logger.error(error_msg)
+                logger.error(f"🔍 Error type: {type(e).__name__}")
                 return ActionResult(error=error_msg)
 
         @self.registry.action(

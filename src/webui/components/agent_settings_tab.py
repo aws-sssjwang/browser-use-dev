@@ -57,31 +57,7 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
                 label="Extend system prompt", 
                 lines=6, 
                 interactive=True,
-                value="""When generating browser actions, always use proper JSON format. Never return empty actions or {}.
-
-For navigation tasks, use this exact format:
-{
-    "action": [
-        {
-            "go_to_url": {
-                "url": "target_url_here"
-            }
-        }
-    ]
-}
-
-For clicking elements, use:
-{
-    "action": [
-        {
-            "click": {
-                "coordinate": [x, y]
-            }
-        }
-    ]
-}
-
-Always ensure actions are properly formatted and never empty."""
+                value=""  # 清空默认内容
             )
 
     with gr.Group():

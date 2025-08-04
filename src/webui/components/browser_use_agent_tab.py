@@ -128,6 +128,28 @@ PLACEHOLDERS["TASK_INSTRUCTIONS"] = task_instructions'''
 
 # --- Helper Functions --- (Defined at module level)
 
+def _create_sagemaker_initial_actions() -> list:
+    """
+    Create initial_actions for SageMaker navigation with hardcoded parameters.
+    
+    Returns:
+        List of initial actions for SageMaker navigation
+    """
+    logger.info("Creating SageMaker initial_actions with hardcoded parameters")
+    
+    # Create a direct SageMaker navigation action
+    initial_actions = [{
+        "navigate_to_sagemaker_presigned_url": {
+            "domain_id": "d-9cpchwz1nnno",
+            "user_profile_name": "adam-test-user-1752279282450", 
+            "space_name": "adam-space-1752279293076",
+            "description": "Navigate to SageMaker Studio using hardcoded parameters"
+        }
+    }]
+    
+    logger.info(f"Generated SageMaker initial_actions: {initial_actions}")
+    return initial_actions
+
 
 async def _initialize_llm(
         provider: Optional[str],
@@ -680,7 +702,7 @@ async def run_agent_task(
                 register_done_callback=done_callback_wrapper,
                 use_vision=use_vision,
                 override_system_message=override_system_prompt,
-                extend_system_message=extend_system_prompt,
+                extend_system_message=extend_system_prompt,  # 使用 extend_system_prompt 的值
                 max_input_tokens=max_input_tokens,
                 max_actions_per_step=max_actions,
                 tool_calling_method=tool_calling_method,
@@ -688,6 +710,7 @@ async def run_agent_task(
                 use_vision_for_planner=planner_use_vision if planner_llm else False,
                 source="webui",
                 placeholders=placeholders,
+                initial_actions=_create_sagemaker_initial_actions(),
             )
             webui_manager.bu_agent.state.agent_id = webui_manager.bu_agent_task_id
             webui_manager.bu_agent.settings.generate_gif = gif_path
@@ -1165,12 +1188,9 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
             label="Prerequisite",
             lines=15,
             placeholder="Add any prerequisites...",
-            value=create_segmented_prerequisite_code(
-                "d-9cpchwz1nnno",
-                "adam-test-user-1752279282450", 
-                "adam-space-1752279293076"
-            ),
+            value="",  # 清空默认值
             info="Optional prerequisites for the task",
+            visible=True,  # 保留 prerequisite 框，但内容为空
         )
         
         chatbot = gr.Chatbot(
@@ -1184,20 +1204,7 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
         user_input = gr.Textbox(
             label="Your Task or Response",
             placeholder="Enter your task here or provide assistance when asked.",
-            value="""1. open PLACEHOLDER_URL_1
-2. append PLACEHOLDER_URL_2 to the url
-3. append PLACEHOLDER_URL_3 to the url
-4. append PLACEHOLDER_URL_4 to the url
-5. append PLACEHOLDER_URL_5 to the url
-6. append PLACEHOLDER_URL_6 to the url
-7. append PLACEHOLDER_URL_7 to the url
-8. append PLACEHOLDER_URL_8 to the url
-9. append PLACEHOLDER_URL_9 to the url
-10. append PLACEHOLDER_URL_10 to the url
-11. append PLACEHOLDER_URL_11 to the url
-12. append PLACEHOLDER_URL_12 to the url
-
-After URL reconstruction is complete:
+            value="""After accessing the URL:
 
 Click on text "File"
 Click on text "New" not "New Launcher"
@@ -1316,7 +1323,14 @@ Step 9: Cleanup - Delete python3 Test Notebook""",
     async def pause_resume_wrapper() -> AsyncGenerator[Dict[Component, Any], None]:
         """Wrapper for handle_pause_resume."""
         update_dict = await handle_pause_resume(webui_manager)
-        yield update_dict
+        # Ensure we return a complete update dict for all outputs
+        complete_update = {}
+        for component in run_tab_outputs:
+            if component in update_dict:
+                complete_update[component] = update_dict[component]
+            else:
+                complete_update[component] = gr.update()  # No change
+        yield complete_update
 
     async def clear_wrapper() -> AsyncGenerator[Dict[Component, Any], None]:
         """Wrapper for handle_clear."""
