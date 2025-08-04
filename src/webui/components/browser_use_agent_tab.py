@@ -100,7 +100,7 @@ response = sagemaker_client.create_presigned_domain_url(
 )
 
 # Segment the URL into manageable chunks
-def segment_url(url, first_size=200, other_size=400):
+def segment_url(url, first_size=100, other_size=450):
     segments = []
     segments.append(url[:first_size])
     remaining = url[first_size:]
