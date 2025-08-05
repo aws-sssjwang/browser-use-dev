@@ -1,0 +1,500 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2025-08-04T15:35:53-07:00"
+    creationTimestamp: "2025-08-04T23:12:09Z"
+    generateName: browser-use-deployment-64754db574-
+    generation: 1
+    labels:
+      app: browser-use
+      pod-template-hash: 64754db574
+    name: browser-use-deployment-64754db574-j29cl
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: browser-use-deployment-64754db574
+      uid: 74bdd9d8-19fa-4b45-9091-433d71a105a5
+    resourceVersion: "1902955"
+    uid: da7fd4ce-5f58-40a7-9d7f-d5a90646b93d
+  spec:
+    containers:
+    - env:
+      - name: DISPLAY
+        value: :99
+      - name: RESOLUTION
+        value: 1920x1080x24
+      - name: VNC_PASSWORD
+        value: youvncpassword
+      - name: BROWSER_DEBUGGING_PORT
+        value: "9222"
+      - name: BROWSER_DEBUGGING_HOST
+        value: localhost
+      - name: USE_OWN_BROWSER
+        value: "false"
+      - name: KEEP_BROWSER_OPEN
+        value: "true"
+      - name: ANONYMIZED_TELEMETRY
+        value: "false"
+      - name: BROWSER_USE_LOGGING_LEVEL
+        value: info
+      image: 137386359997.dkr.ecr.us-east-1.amazonaws.com/web-ui:latest
+      imagePullPolicy: Always
+      name: browser-use
+      ports:
+      - containerPort: 7788
+        name: webui
+        protocol: TCP
+      - containerPort: 6080
+        name: vnc-web
+        protocol: TCP
+      - containerPort: 5901
+        name: vnc-direct
+        protocol: TCP
+      - containerPort: 9222
+        name: browser-debug
+        protocol: TCP
+      resources:
+        limits:
+          cpu: 800m
+          memory: 1Gi
+        requests:
+          cpu: 200m
+          memory: 512Mi
+      securityContext:
+        capabilities:
+          add:
+          - SYS_ADMIN
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /dev/shm
+        name: shm-volume
+      - mountPath: /tmp
+        name: tmp-volume
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mksjx
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: ip-192-168-43-148.ec2.internal
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - emptyDir:
+        medium: Memory
+        sizeLimit: 2Gi
+      name: shm-volume
+    - emptyDir: {}
+      name: tmp-volume
+    - name: kube-api-access-mksjx
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2025-08-04T23:12:11Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2025-08-04T23:12:09Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2025-08-04T23:51:45Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2025-08-04T23:51:45Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2025-08-04T23:12:09Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - allocatedResources:
+        cpu: 200m
+        memory: 512Mi
+      containerID: containerd://343dfc2882e9ef5c838cf57022fb6e6eae47ce4ef10ad23790528ac200ed17ba
+      image: 137386359997.dkr.ecr.us-east-1.amazonaws.com/web-ui:latest
+      imageID: 137386359997.dkr.ecr.us-east-1.amazonaws.com/web-ui@sha256:0b25c5a47f6b4eff420a910ad65c8c8b21ae47a03cd8e7e87620904d95b2b451
+      lastState:
+        terminated:
+          containerID: containerd://3b36d71e457e9a111891ef6f53c55e48b2a2f9b70cb83637a1e3d60909b9df9f
+          exitCode: 137
+          finishedAt: "2025-08-04T23:51:43Z"
+          reason: OOMKilled
+          startedAt: "2025-08-04T23:26:20Z"
+      name: browser-use
+      ready: true
+      resources:
+        limits:
+          cpu: 800m
+          memory: 1Gi
+        requests:
+          cpu: 200m
+          memory: 512Mi
+      restartCount: 3
+      started: true
+      state:
+        running:
+          startedAt: "2025-08-04T23:51:44Z"
+      volumeMounts:
+      - mountPath: /dev/shm
+        name: shm-volume
+      - mountPath: /tmp
+        name: tmp-volume
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mksjx
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 192.168.43.148
+    hostIPs:
+    - ip: 192.168.43.148
+    phase: Running
+    podIP: 192.168.51.181
+    podIPs:
+    - ip: 192.168.51.181
+    qosClass: Burstable
+    startTime: "2025-08-04T23:12:09Z"
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app":"browser-use"},"name":"browser-use-service","namespace":"default"},"spec":{"ports":[{"name":"webui","port":7788,"protocol":"TCP","targetPort":7788},{"name":"vnc-web","port":6080,"protocol":"TCP","targetPort":6080},{"name":"vnc-direct","port":5901,"protocol":"TCP","targetPort":5901},{"name":"browser-debug","port":9222,"protocol":"TCP","targetPort":9222}],"selector":{"app":"browser-use"},"type":"ClusterIP"}}
+    creationTimestamp: "2025-07-29T15:37:03Z"
+    labels:
+      app: browser-use
+    name: browser-use-service
+    namespace: default
+    resourceVersion: "254511"
+    uid: 7631b44f-544d-4817-9dc7-43deb8f89e8f
+  spec:
+    clusterIP: 10.100.248.48
+    clusterIPs:
+    - 10.100.248.48
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: webui
+      port: 7788
+      protocol: TCP
+      targetPort: 7788
+    - name: vnc-web
+      port: 6080
+      protocol: TCP
+      targetPort: 6080
+    - name: vnc-direct
+      port: 5901
+      protocol: TCP
+      targetPort: 5901
+    - name: browser-debug
+      port: 9222
+      protocol: TCP
+      targetPort: 9222
+    selector:
+      app: browser-use
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2025-07-29T14:50:41Z"
+    labels:
+      component: apiserver
+      provider: kubernetes
+    name: kubernetes
+    namespace: default
+    resourceVersion: "212"
+    uid: 1aa82b50-ac6d-4849-8dfc-580971724021
+  spec:
+    clusterIP: 10.100.0.1
+    clusterIPs:
+    - 10.100.0.1
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 443
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "46"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"browser-use"},"name":"browser-use-deployment","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"browser-use"}},"template":{"metadata":{"labels":{"app":"browser-use"}},"spec":{"containers":[{"env":[{"name":"DISPLAY","value":":99"},{"name":"RESOLUTION","value":"1920x1080x24"},{"name":"VNC_PASSWORD","value":"youvncpassword"},{"name":"BROWSER_DEBUGGING_PORT","value":"9222"},{"name":"BROWSER_DEBUGGING_HOST","value":"localhost"},{"name":"USE_OWN_BROWSER","value":"false"},{"name":"KEEP_BROWSER_OPEN","value":"true"},{"name":"ANONYMIZED_TELEMETRY","value":"false"},{"name":"BROWSER_USE_LOGGING_LEVEL","value":"info"}],"image":"137386359997.dkr.ecr.us-east-1.amazonaws.com/web-ui:long-url-fix","name":"browser-use","ports":[{"containerPort":7788,"name":"webui"},{"containerPort":6080,"name":"vnc-web"},{"containerPort":5901,"name":"vnc-direct"},{"containerPort":9222,"name":"browser-debug"}],"resources":{"limits":{"cpu":"1500m","memory":"2Gi"},"requests":{"cpu":"500m","memory":"1Gi"}},"securityContext":{"capabilities":{"add":["SYS_ADMIN"]}},"volumeMounts":[{"mountPath":"/dev/shm","name":"shm-volume"},{"mountPath":"/tmp","name":"tmp-volume"}]}],"volumes":[{"emptyDir":{"medium":"Memory","sizeLimit":"2Gi"},"name":"shm-volume"},{"emptyDir":{},"name":"tmp-volume"}]}}}}
+    creationTimestamp: "2025-08-01T04:01:38Z"
+    generation: 46
+    labels:
+      app: browser-use
+    name: browser-use-deployment
+    namespace: default
+    resourceVersion: "1902959"
+    uid: 9d9955a4-f5c4-4638-bc69-4ecd5422dd51
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: browser-use
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2025-08-04T15:35:53-07:00"
+        creationTimestamp: null
+        labels:
+          app: browser-use
+      spec:
+        containers:
+        - env:
+          - name: DISPLAY
+            value: :99
+          - name: RESOLUTION
+            value: 1920x1080x24
+          - name: VNC_PASSWORD
+            value: youvncpassword
+          - name: BROWSER_DEBUGGING_PORT
+            value: "9222"
+          - name: BROWSER_DEBUGGING_HOST
+            value: localhost
+          - name: USE_OWN_BROWSER
+            value: "false"
+          - name: KEEP_BROWSER_OPEN
+            value: "true"
+          - name: ANONYMIZED_TELEMETRY
+            value: "false"
+          - name: BROWSER_USE_LOGGING_LEVEL
+            value: info
+          image: 137386359997.dkr.ecr.us-east-1.amazonaws.com/web-ui:latest
+          imagePullPolicy: Always
+          name: browser-use
+          ports:
+          - containerPort: 7788
+            name: webui
+            protocol: TCP
+          - containerPort: 6080
+            name: vnc-web
+            protocol: TCP
+          - containerPort: 5901
+            name: vnc-direct
+            protocol: TCP
+          - containerPort: 9222
+            name: browser-debug
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 800m
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+          securityContext:
+            capabilities:
+              add:
+              - SYS_ADMIN
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /dev/shm
+            name: shm-volume
+          - mountPath: /tmp
+            name: tmp-volume
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi
+          name: shm-volume
+        - emptyDir: {}
+          name: tmp-volume
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2025-08-01T21:48:59Z"
+      lastUpdateTime: "2025-08-04T23:12:11Z"
+      message: ReplicaSet "browser-use-deployment-64754db574" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2025-08-04T23:51:45Z"
+      lastUpdateTime: "2025-08-04T23:51:45Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 46
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "46"
+    creationTimestamp: "2025-08-04T23:12:09Z"
+    generation: 1
+    labels:
+      app: browser-use
+      pod-template-hash: 64754db574
+    name: browser-use-deployment-64754db574
+    namespace: default
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: browser-use-deployment
+      uid: 9d9955a4-f5c4-4638-bc69-4ecd5422dd51
+    resourceVersion: "1902958"
+    uid: 74bdd9d8-19fa-4b45-9091-433d71a105a5
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: browser-use
+        pod-template-hash: 64754db574
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2025-08-04T15:35:53-07:00"
+        creationTimestamp: null
+        labels:
+          app: browser-use
+          pod-template-hash: 64754db574
+      spec:
+        containers:
+        - env:
+          - name: DISPLAY
+            value: :99
+          - name: RESOLUTION
+            value: 1920x1080x24
+          - name: VNC_PASSWORD
+            value: youvncpassword
+          - name: BROWSER_DEBUGGING_PORT
+            value: "9222"
+          - name: BROWSER_DEBUGGING_HOST
+            value: localhost
+          - name: USE_OWN_BROWSER
+            value: "false"
+          - name: KEEP_BROWSER_OPEN
+            value: "true"
+          - name: ANONYMIZED_TELEMETRY
+            value: "false"
+          - name: BROWSER_USE_LOGGING_LEVEL
+            value: info
+          image: 137386359997.dkr.ecr.us-east-1.amazonaws.com/web-ui:latest
+          imagePullPolicy: Always
+          name: browser-use
+          ports:
+          - containerPort: 7788
+            name: webui
+            protocol: TCP
+          - containerPort: 6080
+            name: vnc-web
+            protocol: TCP
+          - containerPort: 5901
+            name: vnc-direct
+            protocol: TCP
+          - containerPort: 9222
+            name: browser-debug
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 800m
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+          securityContext:
+            capabilities:
+              add:
+              - SYS_ADMIN
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /dev/shm
+            name: shm-volume
+          - mountPath: /tmp
+            name: tmp-volume
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi
+          name: shm-volume
+        - emptyDir: {}
+          name: tmp-volume
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+kind: List
+metadata:
+  resourceVersion: ""
