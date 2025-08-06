@@ -48,6 +48,40 @@ CHROME_DETERMINISTIC_RENDERING_ARGS = [
     '--disable-features=TranslateUI',
     '--disable-ipc-flooding-protection',
 ]
+
+# Enhanced anti-detection arguments for SageMaker Studio
+CHROME_STEALTH_ARGS = [
+    '--disable-blink-features=AutomationControlled',
+    '--disable-extensions',
+    '--disable-plugins',
+    '--disable-default-apps',
+    '--disable-sync',
+    '--disable-translate',
+    '--disable-background-networking',
+    '--disable-background-timer-throttling',
+    '--disable-client-side-phishing-detection',
+    '--disable-component-extensions-with-background-pages',
+    '--disable-default-apps',
+    '--disable-hang-monitor',
+    '--disable-popup-blocking',
+    '--disable-prompt-on-repost',
+    '--disable-domain-reliability',
+    '--disable-features=VizDisplayCompositor,TranslateUI,BlinkGenPropertyTrees',
+    '--disable-ipc-flooding-protection',
+    '--enable-features=NetworkService,NetworkServiceLogging',
+    '--force-color-profile=srgb',
+    '--metrics-recording-only',
+    '--no-crash-upload',
+    '--no-default-browser-check',
+    '--no-first-run',
+    '--no-pings',
+    '--no-zygote',
+    '--password-store=basic',
+    '--use-mock-keychain',
+    '--disable-gpu-sandbox',
+    '--disable-software-rasterizer',
+    '--disable-dev-shm-usage',
+]
 from browser_use.browser.context import BrowserContext, BrowserContextConfig
 from browser_use.browser.utils.screen_resolution import get_screen_resolution, get_window_adjustments
 from browser_use.utils import time_execution_async
@@ -94,6 +128,7 @@ class CustomBrowser(Browser):
         import os
         is_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
         
+        # Enhanced stealth mode for SageMaker Studio
         chrome_args = {
             f'--remote-debugging-port={self.config.chrome_remote_debugging_port}',
             *CHROME_ARGS,
@@ -101,8 +136,10 @@ class CustomBrowser(Browser):
             *(CHROME_HEADLESS_ARGS if self.config.headless else []),
             *(CHROME_DISABLE_SECURITY_ARGS if self.config.disable_security else []),
             *(CHROME_DETERMINISTIC_RENDERING_ARGS if self.config.deterministic_rendering else []),
+            *CHROME_STEALTH_ARGS,  # Add enhanced anti-detection arguments
             f'--window-position={offset_x},{offset_y}',
             f'--window-size={screen_size["width"]},{screen_size["height"]}',
+            '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             *self.config.extra_browser_args,
         }
 

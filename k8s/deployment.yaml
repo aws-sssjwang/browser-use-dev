@@ -17,7 +17,7 @@ spec:
       serviceAccountName: browser-use-webui-sa
       containers:
       - name: web-ui
-        image: 137386359997.dkr.ecr.us-east-1.amazonaws.com/web-ui:presigned-url-initial-actions
+        image: 137386359997.dkr.ecr.us-east-1.amazonaws.com/web-ui:latest-with-stealth
         ports:
         - containerPort: 7788
           name: webui
