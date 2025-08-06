@@ -1,0 +1,26 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "bedrock:InvokeModel",
+                "bedrock:InvokeModelWithResponseStream",
+                "bedrock:ListFoundationModels",
+                "bedrock:GetFoundationModel"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sagemaker:CreatePresignedDomainUrl",
+                "sagemaker:DescribeDomain",
+                "sagemaker:DescribeUserProfile",
+                "sagemaker:DescribeSpace",
+                "sagemaker:ListSpaces"
+            ],
+            "Resource": "*"
+        }
+    ]
+}

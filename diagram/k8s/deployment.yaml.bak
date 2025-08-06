@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-ui-deployment
+  labels:
+    app: web-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-ui
+  template:
+    metadata:
+      labels:
+        app: web-ui
+    spec:
+      serviceAccountName: browser-use-webui-sa
+      containers:
+      - name: web-ui
+        image: 137386359997.dkr.ecr.us-east-1.amazonaws.com/web-ui:presigned-url-initial-actions
+        ports:
+        - containerPort: 7788
+          name: webui
+        - containerPort: 6080
+          name: vnc
+        - containerPort: 5901
+          name: vnc-direct
+        - containerPort: 9222
+          name: chrome-debug
+        env:
+        - name: AWS_BEDROCK_REGION
+          value: "us-west-2"
+        - name: AWS_DEFAULT_REGION
+          value: "us-east-1"
+        - name: SAGEMAKER_DOMAIN_ID
+          value: "d-9cpchwz1nnno"
+        - name: SAGEMAKER_USER_PROFILE_NAME
+          value: "adam-test-user-1752279282450"
+        - name: SAGEMAKER_SPACE_NAME
+          value: "adam-space-1752279293076"
+        - name: DEFAULT_LLM
+          value: "bedrock"
+        - name: ANONYMIZED_TELEMETRY
+          value: "false"
+        - name: BROWSER_USE_LOGGING_LEVEL
+          value: "info"
+        - name: HEADLESS
+          value: "true"
+        - name: KEEP_BROWSER_OPEN
+          value: "true"
+        - name: USE_OWN_BROWSER
+          value: "false"
+        - name: RESOLUTION
+          value: "1920x1080x24"
+        - name: RESOLUTION_WIDTH
+          value: "1920"
+        - name: RESOLUTION_HEIGHT
+          value: "1080"
+        - name: VNC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: browser-use-webui-secret
+              key: vnc-password
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1500m"
+        securityContext:
+          capabilities:
+            add:
+              - SYS_ADMIN
+        volumeMounts:
+        - name: shm
+          mountPath: /dev/shm
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: shm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 2Gi
+      - name: tmp
+        emptyDir: {}
+      restartPolicy: Always

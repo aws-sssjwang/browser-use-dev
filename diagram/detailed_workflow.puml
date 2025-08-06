@@ -1,0 +1,68 @@
+@startuml Detailed Solution Workflow
+
+skinparam backgroundColor #FFFFFF
+skinparam activity {
+    BackgroundColor #E8F4FD
+    BorderColor #2E86AB
+    FontColor #2E86AB
+}
+
+skinparam arrow {
+    Color #2E86AB
+    FontColor #2E86AB
+}
+
+start
+
+:One-Click Local Setup;
+note right
+Environment configuration
+Dependency installation
+Browser-Use Web UI setup
+end note
+
+:Generate SageMaker\nPresigned URL;
+note right
+~4500 tokens length
+Authentication included
+end note
+
+:Manual Copy Step\n(CMD → Address Bar);
+note right
+Current Limitation:
+Manual intervention required
+for URL injection
+end note
+
+:Browser-Use Web UI\nInitialization;
+note right
+Load automation framework
+Configure browser settings
+Prepare test environment
+end note
+
+:Execute JupyterLab\nUI Automation;
+note right
+Navigate to JupyterLab
+Perform UI interactions
+Validate test scenarios
+end note
+
+:Generate Test Results;
+note right
+Success/failure reporting
+Screenshot capture
+Log generation
+end note
+
+stop
+
+floating note left
+Key Improvements:
+✅ 95% automation achieved
+✅ Eliminated ADAM dependency
+✅ Restored development velocity
+⚠️ Single manual step remains
+end note
+
+@enduml

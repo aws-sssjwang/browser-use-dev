@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-ui-service
+  labels:
+    app: web-ui
+spec:
+  selector:
+    app: web-ui
+  ports:
+  - name: webui
+    port: 7788
+    targetPort: 7788
+    protocol: TCP
+  - name: vnc
+    port: 6080
+    targetPort: 6080
+    protocol: TCP
+  - name: vnc-direct
+    port: 5901
+    targetPort: 5901
+    protocol: TCP
+  - name: chrome-debug
+    port: 9222
+    targetPort: 9222
+    protocol: TCP
+  type: ClusterIP

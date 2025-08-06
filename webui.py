@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import argparse
 from src.webui.interface import theme_map, create_ui
+from shortener_srv import start_shortener_in_background
 
 
 def main():
@@ -10,6 +11,9 @@ def main():
     parser.add_argument("--port", type=int, default=7788, help="Port to listen on")
     parser.add_argument("--theme", type=str, default="Ocean", choices=theme_map.keys(), help="Theme to use for the UI")
     args = parser.parse_args()
+
+    # Start shortener service in background before launching Gradio
+    start_shortener_in_background()
 
     demo = create_ui(theme_name=args.theme)
     demo.queue().launch(server_name=args.ip, server_port=args.port)
