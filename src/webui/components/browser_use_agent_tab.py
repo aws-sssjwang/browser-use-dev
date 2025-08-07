@@ -972,6 +972,7 @@ async def handle_submit(
 ):
     """Handles clicks on the main 'Submit' button."""
     user_input_comp = webui_manager.get_component_by_id("browser_use_agent.user_input")
+    vnc_popup_html_comp = webui_manager.get_component_by_id("browser_use_agent.vnc_popup_html")
     user_input_value = components.get(user_input_comp, "").strip()
 
     # Check if waiting for user assistance
@@ -1002,8 +1003,42 @@ async def handle_submit(
     else:
         # Handle submission for a new task
         logger.info("Submit button clicked for new task.")
-        # Use async generator to stream updates from run_agent_task
+        
+        # Generate VNC popup JavaScript
+        vnc_popup_js = """
+        <script>
+        function openVNCWindow() {
+            const vncUrl = window.location.origin + '/vnc.html?host=' + window.location.hostname + '&port=6080';
+            const vncWindow = window.open(
+                vncUrl, 
+                'vnc_browser_view',
+                'width=1200,height=800,scrollbars=yes,resizable=yes,toolbar=no,menubar=no'
+            );
+            
+            if (vncWindow) {
+                vncWindow.focus();
+                console.log('VNC window opened successfully:', vncUrl);
+            } else {
+                console.warn('VNC popup blocked. Manual access required:', vncUrl);
+                alert('Popup blocked! Please manually open VNC view at: ' + vncUrl);
+            }
+        }
+        
+        // Delay VNC window opening to ensure browser has started
+        setTimeout(openVNCWindow, 3000);
+        </script>
+        """
+        
+        # First yield to show VNC popup JavaScript
+        yield {
+            vnc_popup_html_comp: gr.update(value=vnc_popup_js, visible=True)
+        }
+        
+        # Then proceed with normal task execution
         async for update in run_agent_task(webui_manager, components):
+            # Ensure VNC popup HTML remains visible during task execution
+            if vnc_popup_html_comp not in update:
+                update[vnc_popup_html_comp] = gr.update(value=vnc_popup_js, visible=True)
             yield update
 
 
@@ -1188,10 +1223,13 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
             label="Prerequisite",
             lines=15,
             placeholder="Add any prerequisites...",
-            value="",  # 清空默认值
+            value="",  # Clear default value
             info="Optional prerequisites for the task",
-            visible=True,  # 保留 prerequisite 框，但内容为空
+            visible=True,  # Keep prerequisite box but empty content
         )
+        
+        # HTML component for VNC popup JavaScript execution
+        vnc_popup_html = gr.HTML(value="", visible=True)
         
         chatbot = gr.Chatbot(
             lambda: webui_manager.bu_chat_history,  # Load history dynamically
@@ -1288,6 +1326,7 @@ Step 9: Cleanup - Delete python3 Test Notebook""",
     tab_components.update(
         dict(
             prerequisite=prerequisite,
+            vnc_popup_html=vnc_popup_html,
             chatbot=chatbot,
             user_input=user_input,
             clear_button=clear_button,

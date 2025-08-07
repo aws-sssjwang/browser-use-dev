@@ -100,9 +100,15 @@ RUN mkdir -p /var/log/supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Set environment variables for container operation
-ENV HEADLESS=true
+ENV HEADLESS=false
 ENV USE_OWN_BROWSER=false
 ENV KEEP_BROWSER_OPEN=true
+ENV DISPLAY=:99
+ENV RESOLUTION=1920x1080x24
+ENV VNC_PASSWORD=youvncpassword
+
+# Ensure X11 has proper permissions and stability
+RUN mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
 
 EXPOSE 7788 6080 5901 9222
 
